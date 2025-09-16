@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Övning: Tyska Perfekt (Slutgiltig version)</title>
+    <style>
+        :root {
+            --primary-bg: #f4f7f9;
+            --container-bg: #ffffff;
+            --text-color: #333;
+            --header-color: #2c3e50;
+            --button-bg: #3498db;
+            --button-hover-bg: #2980b9;
+            --correct-bg: #e8f5e9;
+            --correct-border: #a5d6a7;
+            --correct-text: #2e7d32;
+            --incorrect-bg: #ffebee;
+            --incorrect-border: #ef9a9a;
+            --incorrect-text: #c62828;
+            --border-radius: 8px;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            color: var(--header-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .question-block {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .question-group {
+            display: none;
+        }
+        .question-group.active {
+            display: block;
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .options label {
+            display: block;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .options label:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .options input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        .check-group-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            background-color: var(--button-bg);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 30px;
+        }
+
+        .check-group-btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+        .check-group-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .group-results {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        #final-results {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 40px;
+            padding: 25px;
+            border-radius: 5px;
+            border: 2px solid var(--header-color);
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            font-style: italic;
+            display: none;
+        }
+
+        .correct-answer {
+            background-color: var(--correct-bg);
+            border-color: var(--correct-border);
+        }
+        .user-wrong {
+            background-color: var(--incorrect-bg);
+            border-color: var(--incorrect-border);
+        }
+        .feedback.correct {
+            background-color: var(--correct-bg);
+            color: var(--correct-text);
+            display: block;
+        }
+        .feedback.incorrect {
+             background-color: var(--incorrect-bg);
+            color: var(--incorrect-text);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <h1>Övning: Perfekt med Regelbundna Verb</h1>
+        
+        <div id="quiz-form-container">
+            </div>
+
+        <div id="final-results" style="display: none;"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Databas med frågor. Två typer: 'participle_only' och 'full_verb'
+        const questionsData = [
+            { type: 'participle_only', question: "Was hast du gestern ___?", verb: "machen", translation: "att göra", correct_answer: "gemacht", incorrect_answers: ["gemachen", "macht", "gemocht"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Er', question_part: 'das Auto', verb: "reparieren", translation: "att reparera", correct_answer: "hat, repariert", incorrect_answers: ["haben, repariert", "ist, repariert", "hat, gerepariert"], rationale: "'Er' (han) kräver 'hat'. Verb på -ieren får inte ge-." },
+            { type: 'participle_only', question: "Ich habe gestern Deutsch ___.", verb: "lernen", translation: "att lära sig", correct_answer: "gelernt", incorrect_answers: ["geleren", "lernt", "gelernen"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Wir', question_part: 'die Rechnung schon', verb: "bezahlen", translation: "att betala", correct_answer: "haben, bezahlt", incorrect_answers: ["habt, bezahlt", "sind, bezahlt", "haben, gebezahlt"], rationale: "'Wir' (vi) kräver 'haben'. Verb med prefix som be- får inte ge-." },
+            { type: 'participle_only', question: "Du hast den Koffer ___.", verb: "packen", translation: "att packa", correct_answer: "gepackt", incorrect_answers: ["gepacken", "packt", "gepack"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Ihr', question_part: 'den ganzen Abend', verb: "tanzen", translation: "att dansa", correct_answer: "habt, getanzt", incorrect_answers: ["haben, getanzt", "sind, getanzt", "habt, getanzen"], rationale: "'Ihr' (ni) kräver 'habt'." },
+            { type: 'participle_only', question: "Was hat der Lehrer ___?", verb: "sagen", translation: "att säga", correct_answer: "gesagt", incorrect_answers: ["gesagen", "sagt", "gesägt"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Das Mädchen', question_part: 'ein Bild', verb: "malen", translation: "att måla", correct_answer: "hat, gemalt", incorrect_answers: ["haben, gemalt", "ist, gemalt", "hat, gemalen"], rationale: "'Das Mädchen' (flickan, es) kräver 'hat'." },
+            { type: 'participle_only', question: "Die Lehrerin hat die Regel ___.", verb: "erklären", translation: "att förklara", correct_answer: "erklärt", incorrect_answers: ["geerklärt", "erklären", "erklährt"], rationale: "Verb med prefix som er- får inte ge-." },
+            { type: 'participle_only', question: "Am Nachmittag haben wir Fußball ___.", verb: "spielen", translation: "att spela", correct_answer: "gespielt", incorrect_answers: ["gespielen", "spielt", "gespilt"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Ich', question_part: 'deine Hilfe', verb: "brauchen", translation: "att behöva", correct_answer: "habe, gebraucht", incorrect_answers: ["hast, gebraucht", "bin, gebraucht", "habe, brauchen"], rationale: "'Ich' (jag) kräver 'habe'." },
+            { type: 'participle_only', question: "Meine Mutter hat den Tisch ___.", verb: "decken", translation: "att duka/täcka", correct_answer: "gedeckt", incorrect_answers: ["gedecken", "deckt", "gedacht"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Sie (hon)', question_part: 'auf den Bus', verb: "warten", translation: "att vänta", correct_answer: "hat, gewartet", incorrect_answers: ["haben, gewartet", "ist, gewartet", "hat, gewartt"], rationale: "'Sie' (hon) kräver 'hat'. Verb med stam på -t/-d får -et i presens, men bara -t i particip." },
+            { type: 'participle_only', question: "Wer hat das Abendessen ___?", verb: "kochen", translation: "att laga mat/koka", correct_answer: "gekocht", incorrect_answers: ["gekochen", "geköcht", "kocht"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Du', question_part: 'die Geschichte nicht', verb: "glauben", translation: "att tro", correct_answer: "hast, geglaubt", incorrect_answers: ["habe, geglaubt", "bist, geglaubt", "hast, geglauben"], rationale: "'Du' (du) kräver 'hast'." },
+            { type: 'participle_only', question: "Wir haben den Schlüssel ___.", verb: "suchen", translation: "att söka", correct_answer: "gesucht", incorrect_answers: ["gesuchen", "sucht", "gesücht"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Das Kind', question_part: 'sein Zimmer', verb: "putzen", translation: "att städa/putsa", correct_answer: "hat, geputzt", incorrect_answers: ["haben, geputzt", "ist, geputzt", "hat, geputzen"], rationale: "'Das Kind' (barnet, es) kräver 'hat'." },
+            { type: 'participle_only', question: "Ich habe dich etwas ___.", verb: "fragen", translation: "att fråga", correct_answer: "gefragt", incorrect_answers: ["gefragen", "fragt", "gefrägt"], rationale: "Regelbunden particip." },
+            { type: 'full_verb', subject: 'Die Kinder (de)', question_part: 'Musik', verb: "hören", translation: "att höra", correct_answer: "haben, gehört", incorrect_answers: ["hat, gehört", "sind, gehört", "haben, gehort"], rationale: "'Die Kinder' (barnen, plural) kräver 'haben'." },
+            { type: 'participle_only', question: "Er hat ein neues Fahrrad ___.", verb: "kaufen", translation: "att köpa", correct_answer: "gekauft", incorrect_answers: ["gekaufen", "kaufte", "kaufen"], rationale: "Regelbunden particip." }
+        ];
+
+        const quizFormContainer = document.getElementById('quiz-form-container');
+        let totalScore = 0;
+        let shuffledQuestions = [];
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function renderQuiz() {
+            shuffledQuestions = shuffleArray([...questionsData]);
+
+            let html = '';
+            shuffledQuestions.forEach((q, index) => {
+                const group = Math.floor(index / 5) + 1;
+                if (index % 5 === 0) {
+                    html += `<div id="group-${group}" class="question-group ${group === 1 ? 'active' : ''}">`;
+                }
+
+                let answers = [...q.incorrect_answers, q.correct_answer];
+                shuffleArray(answers);
+                
+                let finalQuestionText = '';
+                // *** KORRIGERINGEN ÄR HÄR ***
+                if (q.type === 'full_verb') {
+                    // Bygg ihop meningen med två luckor explicit
+                    finalQuestionText = `${q.subject} <strong>___</strong> ${q.question_part} <strong>___ (${q.verb} - ${q.translation})</strong>.`;
+                } else {
+                    // Använd den enklare metoden för frågor med en lucka
+                    const verbHint = `<strong>___ (${q.verb} - ${q.translation})</strong>`;
+                    finalQuestionText = q.question.replace('___', verbHint);
+                }
+
+                html += `
+                    <div class="question-block" id="q${index}">
+                        <p class="question-text">${index + 1}. ${finalQuestionText}</p>
+                        <div class="options">
+                `;
+                answers.forEach(answer => {
+                    const isCorrect = (answer === q.correct_answer) ? 'data-correct="true"' : '';
+                    html += `<label><input type="radio" name="q${index}" value="${answer.replace(/"/g, '&quot;')}" ${isCorrect}>${answer}</label>`;
+                });
+                html += `
+                        </div>
+                        <div class="feedback"></div>
+                    </div>
+                `;
+
+                if ((index + 1) % 5 === 0 || index === shuffledQuestions.length - 1) {
+                    const startRange = index - 4;
+                    const endRange = index + 1;
+                    html += `
+                        <button class="check-group-btn" data-group="${group}" data-start="${startRange}" data-end="${endRange -1}">Rätta fråga ${startRange + 1}-${endRange}</button>
+                        <div class="group-results" id="group-results-${group}"></div>
+                        </div>
+                    `;
+                }
+            });
+            quizFormContainer.innerHTML = html;
+        }
+
+        function checkGroup(group, startIndex, endIndex) {
+            let groupScore = 0;
+            const questionsInGroup = (endIndex - startIndex) + 1;
+
+            for (let i = startIndex; i <= endIndex; i++) {
+                const questionBlock = document.getElementById(`q${i}`);
+                const feedbackDiv = questionBlock.querySelector('.feedback');
+                const selectedOption = document.querySelector(`input[name="q${i}"]:checked`);
+
+                questionBlock.querySelectorAll('.options label').forEach(label => {
+                    label.classList.remove('correct-answer', 'user-wrong');
+                });
+                
+                const correctInput = questionBlock.querySelector('input[data-correct="true"]');
+                const originalQuestion = shuffledQuestions[i];
+                const rationale = `Rätt svar är <strong>${originalQuestion.correct_answer}</strong>. ${originalQuestion.rationale}`;
+
+                if (selectedOption) {
+                    const selectedLabel = selectedOption.parentElement;
+                    if (selectedOption.hasAttribute('data-correct')) {
+                        groupScore++;
+                        selectedLabel.classList.add('correct-answer');
+                        feedbackDiv.className = 'feedback correct';
+                        feedbackDiv.textContent = `Rätt! ${originalQuestion.rationale}`;
+                    } else {
+                        selectedLabel.classList.add('user-wrong');
+                        correctInput.parentElement.classList.add('correct-answer');
+                        feedbackDiv.className = 'feedback incorrect';
+                        feedbackDiv.textContent = `Fel. ${rationale}`;
+                    }
+                } else {
+                    correctInput.parentElement.classList.add('correct-answer');
+                    feedbackDiv.className = 'feedback incorrect';
+                    feedbackDiv.textContent = `Inget svar valt. ${rationale}`;
+                }
+            }
+
+            totalScore += groupScore;
+            const groupResultsDiv = document.getElementById(`group-results-${group}`);
+            groupResultsDiv.textContent = `Resultat för denna grupp: ${groupScore} av ${questionsInGroup} rätt.`;
+
+            const currentButton = document.querySelector(`button[data-group="${group}"]`);
+            currentButton.disabled = true;
+
+            const nextGroup = document.getElementById(`group-${group + 1}`);
+            if (nextGroup) {
+                nextGroup.classList.add('active');
+                 nextGroup.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                const finalResultsDiv = document.getElementById('final-results');
+                finalResultsDiv.textContent = `Totalt resultat: ${totalScore} av ${questionsData.length} rätt!`;
+                finalResultsDiv.style.display = 'block';
+                 finalResultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        renderQuiz();
+
+        quizFormContainer.addEventListener('click', function(event) {
+            if (event.target.classList.contains('check-group-btn')) {
+                const group = parseInt(event.target.dataset.group, 10);
+                const start = parseInt(event.target.dataset.start, 10);
+                const end = parseInt(event.target.dataset.end, 10);
+                checkGroup(group, start, end);
+            }
+        });
+    });
+    </script>
+
+</body>
+</html>
